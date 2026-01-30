@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zevar Collection Live</title>
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/png" href="logo.png">
+
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Zevar Collection">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Oswald:wght@500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --gold: #E2B04E; --dark-bg: #0D0D0D; --card-bg: #1A1A1A; --text: #FFFFFF; --up: #00E676; --down: #FF5252; }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--dark-bg); color: var(--text); font-family: 'Montserrat', sans-serif; margin: 0; overflow-x: hidden; }
+
+        /* Navigation Bar */
+        .navbar { background: #000; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--gold); sticky: top; }
+        .logo-area h1 { font-family: 'Oswald', sans-serif; margin: 0; color: var(--gold); font-size: 1.5rem; letter-spacing: 2px; }
+        
+        /* News Ticker (Chalti Patti) */
+        .ticker-wrap { background: rgba(226, 176, 78, 0.1); padding: 5px 0; overflow: hidden; }
+        .ticker { white-space: nowrap; display: inline-block; animation: marquee 20s linear infinite; color: var(--gold); font-size: 0.8rem; }
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        /* Price Section */
+        .container { padding: 15px; }
+        .section-title { font-size: 0.9rem; color: #888; text-transform: uppercase; margin: 20px 0 10px 5px; letter-spacing: 1px; }
+        
+        .price-card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #222; }
+        .price-card:active { transform: scale(0.98); background: #222; }
+
+        .metal-info .name { font-weight: bold; font-size: 1.1rem; display: block; }
+        .metal-info .purity { font-size: 0.7rem; color: var(--gold); }
+
+        .rate-box { text-align: right; }
+        .current-rate { font-family: 'Oswald', sans-serif; font-size: 1.8rem; display: block; transition: 0.3s; }
+        .change-val { font-size: 0.75rem; font-weight: bold; }
+
+        /* High/Low Horizontal */
+        .hl-strip { display: flex; gap: 15px; font-size: 0.7rem; color: #666; margin-top: 8px; border-top: 1px solid #222; padding-top: 8px; }
+
+        /* Floating Action Button (Admin) */
+        .fab { position: fixed; bottom: 20px; right: 20px; background: var(--gold); width: 50px; height: 50px; border-radius: 25px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-size: 1.5rem; color: #000; cursor: pointer; z-index: 100; }
+
+        /* Admin Overlay */
+        #adminPanel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; padding: 30px; flex-direction: column; justify-content: center; }
+        .admin-box { background: #111; border: 1px solid var(--gold); padding: 25px; border-radius: 15px; }
+        input { width: 100%; padding: 15px; margin: 10px 0; background: #000; border: 1px solid #333; color: var(--gold); border-radius: 8px; font-size: 1.1rem; }
+        .update-btn { width: 100%; padding: 15px; background: var(--gold); border: none; font-weight: bold; border-radius: 8px; margin-top: 10px; font-size: 1rem; }
+
+        /* Status Colors */
+        .up { color: var(--up); }
+        .down { color: var(--down); }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="logo-area">
+            <h1>ZEVAR COLLECTION</h1>
+        </div>
+        <div id="live-dot" style="color:var(--up); font-size: 0.7rem;">● LIVE</div>
+    </div>
+
+    <div class="ticker-wrap">
+        <div class="ticker">
+            Welcome to Zevar Collection - Purest Gold & Silver at Live Market Rates. Contact: +91 9554979364 | BIS Hallmark Jewellery Available.
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section-title">Gold Market (10g)</div>
+        
+        <div class="price-card">
+            <div class="metal-info">
+                <span class="name">Gold 24K</span>
+                <span class="purity">999 Purity / Fine Gold</span>
+                <div class="hl-strip">
+                    <span>H: <span id="h24">0</span></span>
+                    <span>L: <span id="l24">0</span></span>
+                </div>
+            </div>
+            <div class="rate-box">
+                <span class="current-rate" id="r24">00,000</span>
+                <span class="change-val" id="c24">--</span>
+            </div>
+        </div>
+
+        <div class="price-card">
+            <div class="metal-info">
+                <span class="name">Gold 22K</span>
+                <span class="purity">916 Hallmark / Jewellery</span>
+                <div class="hl-strip">
+                    <span>H: <span id="h22">0</span></span>
+                    <span>L: <span id="l22">0</span></span>
+                </div>
+            </div>
+            <div class="rate-box">
+                <span class="current-rate" id="r22">00,000</span>
+                <span class="change-val" id="c22">--</span>
+            </div>
+        </div>
+
+        <div class="price-card">
+            <div class="metal-info">
+                <span class="name">Gold 18K</span>
+                <span class="purity">750 Purity / Luxury</span>
+                <div class="hl-strip">
+                    <span>H: <span id="h18">0</span></span>
+                    <span>L: <span id="l18">0</span></span>
+                </div>
+            </div>
+            <div class="rate-box">
+                <span class="current-rate" id="r18">00,000</span>
+                <span class="change-val" id="c18">--</span>
+            </div>
+        </div>
+
+        <div class="section-title">Silver Market (1kg)</div>
+        <div class="price-card">
+            <div class="metal-info">
+                <span class="name" style="color:#C0C0C0">Silver 999</span>
+                <span class="purity">100.0% Fine Silver</span>
+                <div class="hl-strip">
+                    <span>H: <span id="hs">0</span></span>
+                    <span>L: <span id="ls">0</span></span>
+                </div>
+            </div>
+            <div class="rate-box">
+                <span class="current-rate" id="rs" style="color:#C0C0C0">00,000</span>
+                <span class="change-val" id="cs">--</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="fab" onclick="showAdmin()">⚙️</div>
+
+    <div id="adminPanel">
+        <div class="admin-box">
+            <h2 style="color:var(--gold); margin-top:0;">Update Rates</h2>
+            <input type="number" id="goldInput" placeholder="24K Base Rate">
+            <input type="number" id="silverInput" placeholder="Silver Base Rate">
+            <button class="update-btn" onclick="pushData()">UPDATE ALL SCREENS</button>
+            <button style="background:none; color:#666; border:none; margin-top:15px; width:100%;" onclick="hideAdmin()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. YOUR FIREBASE CONFIG
+        const firebaseConfig = { databaseURL:  "https://zevar-f3555-default-rtdb.firebaseio.com/" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let masterG = 0, masterS = 0;
+        let highs = { r24: 0, r22: 0, r18: 0, rs: 0 };
+        let lows = { r24: 999999, r22: 999999, r18: 999999, rs: 999999 };
+
+        // 2. FETCH DATA
+        db.ref('big_app_rates').on('value', (snap) => {
+            const val = snap.val();
+            if(val) {
+                masterG = parseInt(val.g);
+                masterS = parseInt(val.s);
+            }
+        });
+
+        // 3. LOGIC (FLUX 1-999)
+        setInterval(() => {
+            if(masterG === 0) return;
+
+            const flux = () => Math.floor(Math.random() * 999) + 1;
+            const dir = () => Math.random() > 0.5 ? 1 : -1;
+
+            let live24 = masterG + (flux() * dir());
+            let liveS = masterS + (flux() * dir());
+            
+            // Auto-Math
+            let live22 = Math.round(live24 * 0.9167);
+            let live18 = Math.round(live24 * 0.75);
+
+            updateUI('r24', live24, 'h24', 'l24', 'c24');
+            updateUI('r22', live22, 'h22', 'l22', 'c22');
+            updateUI('r18', live18, 'h18', 'l18', 'c18');
+            updateUI('rs', liveS, 'hs', 'ls', 'cs');
+        }, 2000);
+
+        function updateUI(id, val, hId, lId, cId) {
+            const el = document.getElementById(id);
+            const oldVal = parseInt(el.innerText.replace(/,/g, '')) || 0;
+            const changeEl = document.getElementById(cId);
+
+            el.innerText = val.toLocaleString('en-IN');
+
+            if(val > oldVal) {
+                el.className = "current-rate up";
+                changeEl.innerText = "+" + (val - oldVal);
+                changeEl.className = "change-val up";
+            } else {
+                el.className = "current-rate down";
+                changeEl.innerText = "-" + (oldVal - val);
+                changeEl.className = "change-val down";
+            }
+
+            // High/Low
+            if(val > highs[id]) { highs[id] = val; document.getElementById(hId).innerText = val.toLocaleString('en-IN'); }
+            if(val < lows[id]) { lows[id] = val; document.getElementById(lId).innerText = val.toLocaleString('en-IN'); }
+        }
+
+        // 4. ADMIN FUNCTIONS
+        function showAdmin() {
+            let pass = prompt("Enter PIN:");
+            if(pass === "786") document.getElementById('adminPanel').style.display = 'flex';
+        }
+        function hideAdmin() { document.getElementById('adminPanel').style.display = 'none'; }
+
+        function pushData() {
+            const g = document.getElementById('goldInput').value;
+            const s = document.getElementById('silverInput').value;
+            if(g && s) {
+                db.ref('big_app_rates').set({ g: g, s: s }).then(() => {
+                    hideAdmin();
+                    alert("Rates Broadcasted Successfully!");
+                });
+            }
+        }
+    </script>
+</body>
+</html>
